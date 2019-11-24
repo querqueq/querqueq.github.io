@@ -1,0 +1,3 @@
+[submodule "qup"]
+	path = qup
+	url = git@github.com:querqueq/qup.git
