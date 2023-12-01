@@ -14,10 +14,6 @@
 			body {
 				background-color:#2e2d2c;
 			}
-			h3   {
-				margin-bottom: 0;
-				margin-top: 2px;
-			}
 			iframe {
 				width: 100%;
 				height: 70px;
@@ -27,59 +23,129 @@
 				text-align: right;
 				width: 100%;
 			}
+
+			#countdown {
+				display: inline-block;
+				width: 4rem;
+			}
+
+			#bars {
+				padding: 0.25rem;
+			}
+			
+			.capacity_bar {
+				width: 100%;
+				border: 2px solid #222;
+				border-radius: 10px;
+				overflow: hidden;
+				box-sizing: border-box;
+			}
+
+			.capacity_fill {
+				border-right: 1px solid #222;
+				padding: 5px;
+			}
 		</style>
   </head>
 
   <body >
 		<div id='refresh-indicator'>Automatischer refresh in <span id='countdown'></span></div>
-    <h3>Wiener Berg</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://flash-cloud.boulderbar.net/modules/bbext/CustomerCapacity.php?gym=wb"
-			frameborder="0" ></iframe>
-    <h3>Hauptbahnhof</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://flash-cloud.boulderbar.net/modules/bbext/CustomerCapacity.php?gym=hbf"
-			frameborder="0" ></iframe>
-    <h3>Hannovermarkt</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://flash-cloud.boulderbar.net/modules/bbext/CustomerCapacity.php?gym=han"
-			frameborder="0"></iframe>
-    <h3>Seestadt</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://flash-cloud.boulderbar.net/modules/bbext/CustomerCapacity.php?gym=see"
-			frameborder="0" ></iframe>
-    <h3>Linz</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://shopsbg.boulderbar.net:8081/modules/bbext/CustomerCapacity.php?gym=LNZ"
-			frameborder="0"></iframe>
-    <h3>Salzburg</h3>
-    <iframe
-			sandbox="allow-same-origin allow-scripts allow-forms allow-top-navigation allow-popups"
-			scrolling="no"
-			src="https://shopsbg.boulderbar.net:8081/modules/bbext/CustomerCapacity.php?gym=SBG"
-			frameborder="0"></iframe>
+		<div id='bars'>
+
+		</div>
   </body>
 
 	<script>
-		function refresh(count) {
+		const iframeUrl = 'https://flash-cloud.boulderbar.net/modules/bbext/CustomerCapacity.php?gym='
+		const bars = [
+			{
+				name:	'Wiener Berg',
+				tag:	'wb'
+			},
+//			{
+//				name:	'Hauptbahnhof',
+//				tag:	'hbf'
+//			},
+//			{
+//				name:	'Hannovermarkt',
+//				tag:	'han'
+//			},
+//			{
+//				name:	'Seestadt',
+//				tag:	'see'
+//			},
+//			{
+//				name:	'Linz',
+//				tag:	'LNZ'
+//			},
+//			{
+//				name:	'Salzburg',
+//				tag:	'SBG'
+//			}
+		]
+
+		function refreshCountdown(count) {
 			if (count < 1) {
-				location.reload()
+				reloadAll()
+				refreshCountdown(10)
 			} else {
 				document.getElementById('countdown').textContent = count + " Sek." 
-				setTimeout(refresh, 1000, count -1)
+				setTimeout(refreshCountdown, 1000, count -1)
 			}
 		}
-		refresh(10)
+
+		async function reloadAll() {
+			const barsDiv = document.getElementById('bars')
+			barsDiv.innerHTML = ''
+
+			for (const bar of bars) {
+				load(bar, barsDiv)
+			}
+		}
+
+		async function load(bar, parent) {
+			const header = document.createElement('h3')
+			const progbar = document.createElement('div')
+			const barfill = document.createElement('div')
+			const fillpercent = document.createElement('h2')
+
+			header.textContent = bar.name
+			progbar.classList.add('capacity_bar')
+			barfill.classList.add('capacity_fill')
+
+			const iframeDoc = await parseBarIframe(bar.tag)
+			console.log(iframeDoc)
+			const h2 = iframeDoc.getElementsByTagName('h2')[0]
+			console.log('innertext' + h2.innerText)
+
+
+			parent.appendChild(header)
+			parent.appendChild(progbar)
+
+			progbar.appendChild(barfill)
+
+			barfill.appendChild(fillpercent)
+
+		}
+		
+		async function parseBarIframe(suffix) {
+			console.log(`loading iframe content for suffix ${suffix}`)
+			const fetchOptions = {
+				method: 'GET',
+				mode: 'no-cors',
+				headers: {
+					'Access-Control-Allow-Origin': '*'
+				}
+			}
+			const parser = new DOMParser()
+			const iframe = await fetch(iframeUrl + suffix, fetchOptions)
+
+			console.log(iframe)
+
+			return parser.parseFromString(iframe, 'text/html')
+		}
+
+		refreshCountdown(0)
 	</script>
 </html>
 
